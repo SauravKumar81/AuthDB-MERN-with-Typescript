@@ -1,6 +1,8 @@
 import z from "zod";
 import catchError from "../utils/catchError.js";
-import VerificationCodeModel from "../models/verificationCode.model.js";
+import { createAccount } from "../services/auth.service.js";
+import { CREATED } from "../constants/http.js";
+import { setAuthCookies } from "../utils/cookies.js";
 
 const registerSchema = z
   .object({
@@ -13,15 +15,20 @@ const registerSchema = z
     message: "Password do not match",
     path: ["confirmPassword"],
   });
+
+//validation reqest
+
 export const registerHandler = catchError(async (req, res) => {
   const request = registerSchema.parse({
     ...req.body,
     userAgent: req.headers["user-agent"],
   });
-  //validation reqest
-  
 
   //call service
+  const { user, accessToken, refreshToken } = await createAccount(request);
 
   //return response
+  return setAuthCookies({ res, accessToken, refreshToken })
+    .status(CREATED)
+    .json(user);
 });
